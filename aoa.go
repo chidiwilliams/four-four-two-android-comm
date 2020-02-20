@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/google/gousb"
 	"fmt"
+	"github.com/google/gousb"
 	"log"
-	"time"
 	"strings"
+	"time"
 )
 
 type N int
