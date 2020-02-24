@@ -1,7 +1,8 @@
-package exec
+package exec_test
 
 import (
 	"fmt"
+	"four-four-two-android-comm/exec"
 	"testing"
 )
 
@@ -20,22 +21,30 @@ func TestRunStdout(t *testing.T) {
 			name: "ls",
 			args: args{
 				out:  make(chan string),
-				name: "echo",
-				args: []string{"Hello"},
+				name: "ls",
+				args: []string{},
 			},
 			err: nil,
 		},
+		// {
+		// 	name: "MSFP",
+		// 	args: args{
+		// 		out:  make(chan string),
+		// 		name: "./MSFP",
+		// 		args: []string{"LEFT"},
+		// 	},
+		// 	err: nil,
+		// },
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			go func() {
-				err := RunStdout(tt.args.out, tt.args.name, tt.args.args...)
-				if err != nil {
-					t.Errorf("RunStdout() error = %v, err %v", err, tt.err)
-				}
+				defer close(tt.args.out)
 
-				close(tt.args.out)
+				if err := exec.RunStdout(tt.args.out, tt.args.name, tt.args.args...); err != tt.err {
+					t.Errorf("RunStdout() error expected %v, got %v", tt.err, err)
+				}
 			}()
 
 			for x := range tt.args.out {

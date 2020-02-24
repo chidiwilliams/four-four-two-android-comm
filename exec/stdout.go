@@ -15,6 +15,8 @@ func RunStdout(out chan<- string, name string, args ...string) error {
 		return err
 	}
 
+	cmd.Stderr = cmd.Stdout
+
 	scanner := bufio.NewScanner(stdout)
 	scanner.Split(bufio.ScanLines)
 
