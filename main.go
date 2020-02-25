@@ -1,66 +1,110 @@
 package main
 
 import (
-	"fmt"
-	"os/exec"
+	"log"
 )
 
-const (
-	moonshotExecutableFilePath = "MSFP"
+var (
+	moonshotExecutableFilePath = "./MSFP"
 
-	usbInCmdActionStart       = "start"
-	usbInCmdActionCaptureLeft = "captureLeft"
+	usbInCmdActionStart   = "start"
+	usbInCmdActionCapture = "capture"
 
-	outCmdTypeStart = "start"
+	outCmdTypeStart       = "start"
+	outCmdTypePreview     = "preview"
+	outCmdTypeScores      = "scores"
+	outCmdTypeFingerprint = "fingerprint"
 )
+
+type data map[string]interface{}
 
 type outCmd struct {
-	Type string                 `json:"type"`
-	Data map[string]interface{} `json:"data"`
+	Type string `json:"type"`
+	Data data   `json:"data"`
 }
 
-func NewOutCmd(cmdType string, data map[string]interface{}) *outCmd {
+func NewOutCmd(cmdType string, data data) *outCmd {
 	return &outCmd{Type: cmdType, Data: data}
+}
+
+func NewErrOutCmd(error error) *outCmd {
+	return &outCmd{Type: "error", Data: data{"error": error.Error()}}
 }
 
 func main() {
 	stack := OpenAccessoryModeStack()
 	defer stack.Close()
 
+	Interact(stack)
+}
+
+func Interact(stack *AccessoryModeStack) {
+	defer RecoverDo(
+		func(x interface{}) {
+			log.Println("Interactor exit due to:", x)
+		},
+		func() {
+			log.Println("Interactor exit normally")
+		},
+	)
+
 	usbIn := make(chan *Command)
 	go ReadCommands(stack.ReadStream, usbIn)
+	defer close(usbIn)
 
 	notifyIn := make(chan int, 9)
+	const (
+		usbWriterId = 1 << iota
+		captureId
+	)
+
 	usbOut, sentIn := make(chan interface{}, 9), make(chan bool)
-	go WriteReports(stack.OutEndpoint, usbOut, sentIn, notifyIn, 1)
+	go WriteReports(stack.OutEndpoint, usbOut, sentIn, notifyIn, usbWriterId)
+	defer close(usbOut)
+
+	captureControlOut, captureResultsIn := make(chan int, 9), make(chan string)
+	go Capture(captureControlOut, captureResultsIn, notifyIn, captureId)
+	defer close(captureControlOut)
+
+	usbWriterPending := 0
 
 	for {
 		select {
-		case cmd, _ := <-usbIn:
-			switch cmd.Action {
+		case command, ok := <-usbIn:
+			if !ok {
+				log.Println("USB Reader died. I am dying too.")
+				return
+			}
+
+			log.Printf("USB command received: %v", command)
+
+			switch command.Action {
 			case usbInCmdActionStart:
 				usbOut <- NewOutCmd(outCmdTypeStart, nil)
-			case usbInCmdActionCaptureLeft:
-				if err := run442Command("LEFT"); err != nil {
-					fmt.Errorf("%+v", err)
-				}
+			case usbInCmdActionCapture:
+				captureControlOut <- CaptureStart
+			}
+
+		case <-sentIn:
+			usbWriterPending--
+
+		case child := <-notifyIn:
+			switch child {
+			case usbWriterId:
+				log.Println("USB writer died")
+			}
+
+		case captureResult := <-captureResultsIn:
+			if len(captureResult) > 6 && captureResult[:6] == "image " {
+				usbOut <- NewOutCmd(outCmdTypePreview, data{"image": captureResult[6:]})
 			}
 		}
 	}
 }
 
-func run442Command(args ...string) error {
-	cmd := exec.Command(moonshotExecutableFilePath, args...)
-
-	_, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
+func sliceStrSafe(s string, i int) string {
+	if len(s) > i {
+		return s[0:i]
 	}
-
-	err = cmd.Start()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s
 }

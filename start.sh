@@ -1,0 +1,1 @@
+cp ../cmake-build-debug/MSFP MSFP && go build && sudo ./four-four-two-android-comm

@@ -64,16 +64,11 @@ func WriteReports(ep *gousb.OutEndpoint, in <-chan interface{}, sent chan<- bool
 		}
 
 		length := len(body)
-		if length > 32767 { // Java short's max value
-			log.Print("USB not writing. Payload too long:", string(body))
-			sent <- false
-			continue
-		}
 
-		log.Printf("Writing USB Payload (%d bytes): %s", length, string(body))
+		log.Printf("Writing USB Payload (%d bytes): %s", length, sliceStrSafe(string(body), 100))
 
-		header := make([]byte, 2)
-		binary.BigEndian.PutUint16(header, uint16(length))
+		header := make([]byte, 8)
+		binary.BigEndian.PutUint32(header, uint32(length))
 
 		if _, err = ep.Write(header); err != nil {
 			panic(err)
