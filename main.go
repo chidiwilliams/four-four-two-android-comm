@@ -27,10 +27,6 @@ func NewOutCmd(cmdType string, data data) *outCmd {
 	return &outCmd{Type: cmdType, Data: data}
 }
 
-func NewErrOutCmd(error error) *outCmd {
-	return &outCmd{Type: "error", Data: data{"error": error.Error()}}
-}
-
 func main() {
 	stack := OpenAccessoryModeStack()
 	defer stack.Close()
@@ -62,7 +58,7 @@ func Interact(stack *AccessoryModeStack) {
 	go WriteReports(stack.OutEndpoint, usbOut, sentIn, notifyIn, usbWriterId)
 	defer close(usbOut)
 
-	captureControlOut, captureResultsIn := make(chan int, 9), make(chan string)
+	captureControlOut, captureResultsIn := make(chan CaptureCmd, 9), make(chan string)
 	go Capture(captureControlOut, captureResultsIn, notifyIn, captureId)
 	defer close(captureControlOut)
 
@@ -82,7 +78,7 @@ func Interact(stack *AccessoryModeStack) {
 			case usbInCmdActionStart:
 				usbOut <- NewOutCmd(outCmdTypeStart, nil)
 			case usbInCmdActionCapture:
-				captureControlOut <- CaptureStart
+				captureControlOut <- CaptureCmd{CaptureStart, command.Args}
 			}
 
 		case <-sentIn:
@@ -92,6 +88,8 @@ func Interact(stack *AccessoryModeStack) {
 			switch child {
 			case usbWriterId:
 				log.Println("USB writer died")
+			case captureId:
+				log.Println("Capture writer died")
 			}
 
 		case captureResult := <-captureResultsIn:

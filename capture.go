@@ -10,7 +10,12 @@ const (
 	CaptureStart = 1 << iota
 )
 
-func Capture(in <-chan int, out chan<- string, notify chan<- int, id int) {
+type CaptureCmd struct {
+	mode int
+	args []string
+}
+
+func Capture(in <-chan CaptureCmd, out chan<- string, notify chan<- int, id int) {
 	defer RecoverDo(
 		func(x interface{}) {
 			notify <- id
@@ -23,14 +28,14 @@ func Capture(in <-chan int, out chan<- string, notify chan<- int, id int) {
 
 	for {
 		select {
-		case x, ok := <-in:
+		case cmd, ok := <-in:
 			if !ok {
 				return
 			}
 
-			switch x {
+			switch cmd.mode {
 			case CaptureStart:
-				err := RunStdout(out, moonshotExecutableFilePath, "LEFT")
+				err := RunStdout(out, moonshotExecutableFilePath, cmd.args...)
 				if err != nil {
 					panic(err)
 				}

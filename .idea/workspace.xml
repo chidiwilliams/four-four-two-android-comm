@@ -3,7 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="2dfa1e80-cb0f-4e02-92de-79fe9740eecd" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/aoa.go" beforeDir="false" afterPath="$PROJECT_DIR$/aoa.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/capture.go" beforeDir="false" afterPath="$PROJECT_DIR$/capture.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -156,7 +157,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Add exec package" />
     <MESSAGE value="Merge stdout and stderr pipes from exec" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge stdout and stderr pipes from exec" />
+    <MESSAGE value="Update aoa details" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update aoa details" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
@@ -192,9 +194,10 @@
       <screen x="0" y="23" width="1680" height="947" />
     </state>
     <state x="516" y="194" key="#go_build_capture.go/0.23.1680.947@0.23.1680.947" timestamp="1582634966728" />
-    <state x="376" y="23" key="CommitChangelistDialog2" timestamp="1582568380395">
-      <screen x="0" y="23" width="1680" height="949" />
+    <state x="376" y="23" key="CommitChangelistDialog2" timestamp="1582720138299">
+      <screen x="0" y="23" width="1680" height="947" />
     </state>
+    <state x="376" y="23" key="CommitChangelistDialog2/0.23.1680.947@0.23.1680.947" timestamp="1582720138299" />
     <state x="376" y="23" key="CommitChangelistDialog2/0.23.1680.949@0.23.1680.949" timestamp="1582568380395" />
     <state width="552" height="653" key="DebuggerActiveHint" timestamp="1582573107569">
       <screen x="0" y="23" width="1680" height="949" />
