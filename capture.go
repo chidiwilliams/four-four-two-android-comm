@@ -14,7 +14,7 @@ func Capture(in <-chan int, out chan<- string, notify chan<- int, id int) {
 	defer RecoverDo(
 		func(x interface{}) {
 			notify <- id
-			log.Print("Capture terminates due to:", x)
+			log.Printf("Capture terminates due to: %s", x)
 		},
 		func() {
 			log.Printf("Capture terminates normally")
@@ -32,7 +32,7 @@ func Capture(in <-chan int, out chan<- string, notify chan<- int, id int) {
 			case CaptureStart:
 				err := RunStdout(out, moonshotExecutableFilePath, "LEFT")
 				if err != nil {
-					out <- err.Error()
+					panic(err)
 				}
 			}
 		}
@@ -41,7 +41,8 @@ func Capture(in <-chan int, out chan<- string, notify chan<- int, id int) {
 
 func RunStdout(out chan<- string, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
-	log.Printf("Running %s with args %v\n", name, args)
+	log.Printf("Command start: running %s with args %v\n", name, args)
+	defer log.Printf("Command end")
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -55,22 +56,17 @@ func RunStdout(out chan<- string, name string, args ...string) error {
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 5*1024*1024)
 
-	log.Print("About to start exec")
-
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	log.Print("Started exec")
 
 	for scanner.Scan() {
-		text := scanner.Text()
-		out <- text
+		out <- scanner.Text()
 	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	log.Print("End of capture scanning")
 	return cmd.Wait()
 }

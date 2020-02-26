@@ -2,17 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2dfa1e80-cb0f-4e02-92de-79fe9740eecd" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/chidiwilliams.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/webServers.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/capture.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/start.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/webServers.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/webServers.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/exec/stdout.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/exec/stdout_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/capture.go" beforeDir="false" afterPath="$PROJECT_DIR$/capture.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pnpi.go" beforeDir="false" afterPath="$PROJECT_DIR$/pnpi.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -172,10 +165,11 @@
     <proxy>direct</proxy>
   </component>
   <component name="WindowStateProjectService">
-    <state x="19" y="173" key="#Deployment" timestamp="1582631442043">
-      <screen x="0" y="23" width="1680" height="949" />
+    <state x="19" y="173" key="#Deployment" timestamp="1582712676406">
+      <screen x="0" y="23" width="1680" height="947" />
     </state>
     <state x="19" y="172" key="#Deployment/0.23.1680.944@0.23.1680.944" timestamp="1582289067638" />
+    <state x="19" y="173" key="#Deployment/0.23.1680.947@0.23.1680.947" timestamp="1582712676406" />
     <state x="19" y="173" key="#Deployment/0.23.1680.949@0.23.1680.949" timestamp="1582631442043" />
     <state x="19" y="173" key="#Deployment/0.23.1680.952@0.23.1680.952" timestamp="1582563214717" />
     <state x="382" y="161" key="#Options" timestamp="1582631382601">
@@ -282,11 +276,11 @@
       <screen x="0" y="23" width="1680" height="944" />
     </state>
     <state x="629" y="399" key="WebDeployment.AddServerDialog.v.1/0.23.1680.944@0.23.1680.944" timestamp="1582218562156" />
-    <state x="439" y="237" width="687" height="522" key="find.popup" timestamp="1582544828152">
-      <screen x="0" y="23" width="1680" height="949" />
+    <state x="439" y="237" width="687" height="520" key="find.popup" timestamp="1582718398922">
+      <screen x="0" y="23" width="1680" height="947" />
     </state>
     <state x="439" y="236" width="687" height="518" key="find.popup/0.23.1680.944@0.23.1680.944" timestamp="1582226125254" />
-    <state x="439" y="237" width="687" height="520" key="find.popup/0.23.1680.947@0.23.1680.947" timestamp="1582300843998" />
+    <state x="439" y="237" width="687" height="520" key="find.popup/0.23.1680.947@0.23.1680.947" timestamp="1582718398922" />
     <state x="439" y="237" width="687" height="522" key="find.popup/0.23.1680.949@0.23.1680.949" timestamp="1582544828152" />
     <state x="688" y="152" key="ftp.server.browser" timestamp="1582219030913">
       <screen x="0" y="23" width="1680" height="944" />

@@ -95,6 +95,7 @@ func Interact(stack *AccessoryModeStack) {
 			}
 
 		case captureResult := <-captureResultsIn:
+			log.Printf("Capture result: %s", sliceStrSafe(captureResult, 50))
 			if len(captureResult) > 6 && captureResult[:6] == "image " {
 				usbOut <- NewOutCmd(outCmdTypePreview, data{"image": captureResult[6:]})
 			}
