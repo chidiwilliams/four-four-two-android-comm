@@ -37,7 +37,7 @@ func Capture(in <-chan CaptureCmd, out chan<- string, notify chan<- int, id int)
 			case CaptureStart:
 				err := RunStdout(out, moonshotExecutableFilePath, cmd.args...)
 				if err != nil {
-					panic(err)
+					log.Printf("Error in capture writer: %v", err)
 				}
 			}
 		}
