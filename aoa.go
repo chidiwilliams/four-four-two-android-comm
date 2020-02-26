@@ -36,9 +36,9 @@ func (i DeviceIdentity) Nil() bool {
 
 func (i DeviceIdentity) Match(d *gousb.DeviceDesc) bool {
 	return i.Bus == d.Bus &&
-			i.Address == d.Address &&
-			i.Vendor == d.Vendor &&
-			i.Product == d.Product
+		i.Address == d.Address &&
+		i.Vendor == d.Vendor &&
+		i.Product == d.Product
 }
 
 func (i DeviceIdentity) IsAccessoryMode() bool {
@@ -336,9 +336,9 @@ func controlRequestOut(d *gousb.Device, request uint8, val, idx uint16, data []b
 const (
 	AoaManufacturer    = "Softcom"
 	AoaModel           = "Moonshot"
-	AoaDescription     = "The Raspberry side of Plug n Pi"
-	AoaProtocolVersion = "2"
-	AoaUri             = "https://github.com/nickoala/pnpi"
+	AoaDescription     = "4-4-2 Fingerprint Scanner"
+	AoaProtocolVersion = "1"
+	AoaUri             = "https://softcom.ng"
 	AoaSerialNumber    = "0123456789"
 )
 
@@ -395,7 +395,7 @@ var currentDeviceMap = make(DeviceMap)
 func OpenAccessoryModeStack() *AccessoryModeStack {
 	for {
 		m, identityOfAccessoryMode, identityToSwitch :=
-				updateDeviceMap(mapDevices(), currentDeviceMap)
+			updateDeviceMap(mapDevices(), currentDeviceMap)
 		currentDeviceMap = m
 
 		if !identityOfAccessoryMode.Nil() {
