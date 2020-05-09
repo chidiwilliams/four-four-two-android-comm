@@ -4,12 +4,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/google/gousb"
 	"io"
 	"log"
+
+	"github.com/google/gousb"
 )
 
-func RecoverDo(f func(interface{}), g func()) {
+func recoverDo(f func(interface{}), g func()) {
 	if r := recover(); r != nil {
 		f(r)
 	} else {
@@ -17,8 +18,8 @@ func RecoverDo(f func(interface{}), g func()) {
 	}
 }
 
-func ReadCommands(r io.Reader, out chan<- *Command) {
-	defer RecoverDo(
+func readCommands(r io.Reader, out chan<- *command) {
+	defer recoverDo(
 		func(x interface{}) {
 			log.Print("USB Reader terminates due to:", x)
 		},
@@ -30,7 +31,7 @@ func ReadCommands(r io.Reader, out chan<- *Command) {
 
 	decoder := json.NewDecoder(r)
 	for {
-		var cmd Command
+		var cmd command
 		if err := decoder.Decode(&cmd); err != nil {
 			panic(fmt.Sprintf("JSON decoder error: %v", err))
 		}
@@ -38,8 +39,8 @@ func ReadCommands(r io.Reader, out chan<- *Command) {
 	}
 }
 
-func WriteReports(ep *gousb.OutEndpoint, in <-chan interface{}, sent chan<- bool, notify chan<- int, id int) {
-	defer RecoverDo(
+func writeReports(ep *gousb.OutEndpoint, in <-chan interface{}, sent chan<- bool, notify chan<- int, id int) {
+	defer recoverDo(
 		func(x interface{}) {
 			notify <- id
 			log.Print("USB Writer terminates due to:", x)

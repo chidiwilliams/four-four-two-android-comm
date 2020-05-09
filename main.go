@@ -11,10 +11,8 @@ var (
 	usbInCmdActionStart   = "start"
 	usbInCmdActionCapture = "capture"
 
-	outCmdTypeStart       = "start"
-	outCmdTypePreview     = "preview"
-	outCmdTypeScores      = "scores"
-	outCmdTypeFingerprint = "fingerprint"
+	outCmdTypeStart   = "start"
+	outCmdTypePreview = "preview"
 )
 
 type data map[string]interface{}
@@ -24,19 +22,23 @@ type outCmd struct {
 	Data data   `json:"data"`
 }
 
-func NewOutCmd(cmdType string, data data) *outCmd {
+func newOutCmd(cmdType string, data data) *outCmd {
 	return &outCmd{Type: cmdType, Data: data}
 }
 
 func main() {
-	stack := OpenAccessoryModeStack()
-	defer stack.Close()
+	stack := openAccessoryModeStack()
+	defer func() {
+		if err := stack.close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
-	Interact(stack)
+	interact(stack)
 }
 
-func Interact(stack *AccessoryModeStack) {
-	defer RecoverDo(
+func interact(stack *accessoryModeStack) {
+	defer recoverDo(
 		func(x interface{}) {
 			log.Println("Interactor exit due to:", x)
 		},
@@ -45,8 +47,8 @@ func Interact(stack *AccessoryModeStack) {
 		},
 	)
 
-	usbIn := make(chan *Command)
-	go ReadCommands(stack.ReadStream, usbIn)
+	usbIn := make(chan *command)
+	go readCommands(stack.ReadStream, usbIn)
 	defer close(usbIn)
 
 	notifyIn := make(chan int, 9)
@@ -57,34 +59,34 @@ func Interact(stack *AccessoryModeStack) {
 	)
 
 	usbOut, sentIn := make(chan interface{}, 9), make(chan bool)
-	go WriteReports(stack.OutEndpoint, usbOut, sentIn, notifyIn, usbWriterId)
+	go writeReports(stack.OutEndpoint, usbOut, sentIn, notifyIn, usbWriterId)
 	defer close(usbOut)
 
-	captureControlOut, captureResultsIn := make(chan CaptureCmd, 9), make(chan string)
-	go Capture(captureControlOut, captureResultsIn, notifyIn, captureId)
+	captureControlOut, captureResultsIn := make(chan captureCmd, 9), make(chan string)
+	go capture(captureControlOut, captureResultsIn, notifyIn, captureId)
 	defer close(captureControlOut)
 
-	finalImageControlOut, finalImageResultsIn := make(chan FinalImageCmd, 9), make(chan FinalImageResult)
-	go HandleFinalImage(finalImageControlOut, finalImageResultsIn, notifyIn, finalImageHandlerId)
+	finalImageControlOut, finalImageResultsIn := make(chan finalImageCmd, 9), make(chan finalImageResult)
+	go handleFinalImage(finalImageControlOut, finalImageResultsIn, notifyIn, finalImageHandlerId)
 	defer close(finalImageControlOut)
 
 	usbWriterPending := 0
 
 	for {
 		select {
-		case command, ok := <-usbIn:
+		case cmd, ok := <-usbIn:
 			if !ok {
 				log.Println("USB Reader died. I am dying too.")
 				return
 			}
 
-			log.Printf("USB command received: %v", command)
+			log.Printf("USB command received: %v", cmd)
 
-			switch command.Action {
+			switch cmd.Action {
 			case usbInCmdActionStart:
-				usbOut <- NewOutCmd(outCmdTypeStart, nil)
+				usbOut <- newOutCmd(outCmdTypeStart, nil)
 			case usbInCmdActionCapture:
-				captureControlOut <- CaptureCmd{CaptureStart, command.Args}
+				captureControlOut <- captureCmd{captureStart, cmd.Args}
 			}
 
 		case <-sentIn:
@@ -101,7 +103,7 @@ func Interact(stack *AccessoryModeStack) {
 		case captureResult := <-captureResultsIn:
 			log.Printf("Capture result: %s", sliceStrSafe(captureResult, 50))
 			if len(captureResult) > 6 && captureResult[:6] == "image " {
-				usbOut <- NewOutCmd(outCmdTypePreview, data{"image": captureResult[6:]})
+				usbOut <- newOutCmd(outCmdTypePreview, data{"image": captureResult[6:]})
 			} else if len(captureResult) > 17 && captureResult[:17] == "Processed images:" {
 				locations, scores := make([]string, 0), make([]string, 0)
 
@@ -113,13 +115,13 @@ func Interact(stack *AccessoryModeStack) {
 					scores = append(scores, m[1])
 				}
 
-				cmd := FinalImageCmd{locations: locations, scores: scores}
+				cmd := finalImageCmd{locations: locations, scores: scores}
 				log.Printf("Sending final image command: %+v", cmd)
 				finalImageControlOut <- cmd
 			}
 
-		case finalImageResult := <-finalImageResultsIn:
-			usbOut <- NewOutCmd("fingerprint", data{"images": finalImageResult.images, "scores": finalImageResult.scores})
+		case finalImageRes := <-finalImageResultsIn:
+			usbOut <- newOutCmd("fingerprint", data{"images": finalImageRes.images, "scores": finalImageRes.scores})
 		}
 	}
 }

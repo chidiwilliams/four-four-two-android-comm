@@ -7,16 +7,16 @@ import (
 )
 
 const (
-	CaptureStart = 1 << iota
+	captureStart = 1 << iota
 )
 
-type CaptureCmd struct {
+type captureCmd struct {
 	mode int
 	args []string
 }
 
-func Capture(in <-chan CaptureCmd, out chan<- string, notify chan<- int, id int) {
-	defer RecoverDo(
+func capture(in <-chan captureCmd, out chan<- string, notify chan<- int, id int) {
+	defer recoverDo(
 		func(x interface{}) {
 			notify <- id
 			log.Printf("Capture terminates due to: %s", x)
@@ -34,8 +34,8 @@ func Capture(in <-chan CaptureCmd, out chan<- string, notify chan<- int, id int)
 			}
 
 			switch cmd.mode {
-			case CaptureStart:
-				err := RunStdout(out, moonshotExecutableFilePath, cmd.args...)
+			case captureStart:
+				err := runStdout(out, moonshotExecutableFilePath, cmd.args...)
 				if err != nil {
 					log.Printf("Error in capture writer: %v", err)
 				}
@@ -44,7 +44,7 @@ func Capture(in <-chan CaptureCmd, out chan<- string, notify chan<- int, id int)
 	}
 }
 
-func RunStdout(out chan<- string, name string, args ...string) error {
+func runStdout(out chan<- string, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	log.Printf("Command start: running %s with args %v\n", name, args)
 	defer log.Printf("Command end")
@@ -61,7 +61,7 @@ func RunStdout(out chan<- string, name string, args ...string) error {
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 5*1024*1024)
 
-	if err := cmd.Start(); err != nil {
+	if err = cmd.Start(); err != nil {
 		return err
 	}
 
@@ -69,7 +69,7 @@ func RunStdout(out chan<- string, name string, args ...string) error {
 		out <- scanner.Text()
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return err
 	}
 

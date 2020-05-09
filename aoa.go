@@ -2,50 +2,51 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/gousb"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/google/gousb"
 )
 
-type N int
+type id int
 
-func (n N) in(ns ...int) bool {
+func (id id) in(ns ...int) bool {
 	for _, i := range ns {
-		if int(n) == i {
+		if int(id) == i {
 			return true
 		}
 	}
 	return false
 }
 
-type DeviceIdentity struct {
+type deviceIdentity struct {
 	Bus     int
 	Address int
 	Vendor  gousb.ID
 	Product gousb.ID
 }
 
-func ReadDeviceIdentity(d *gousb.DeviceDesc) DeviceIdentity {
-	return DeviceIdentity{d.Bus, d.Address, d.Vendor, d.Product}
+func readDeviceIdentity(d *gousb.DeviceDesc) deviceIdentity {
+	return deviceIdentity{d.Bus, d.Address, d.Vendor, d.Product}
 }
 
-func (i DeviceIdentity) Nil() bool {
+func (i deviceIdentity) nil() bool {
 	return i.Bus == 0 && i.Address == 0 && i.Vendor == 0 && i.Product == 0
 }
 
-func (i DeviceIdentity) Match(d *gousb.DeviceDesc) bool {
+func (i deviceIdentity) match(d *gousb.DeviceDesc) bool {
 	return i.Bus == d.Bus &&
-		i.Address == d.Address &&
-		i.Vendor == d.Vendor &&
-		i.Product == d.Product
+			i.Address == d.Address &&
+			i.Vendor == d.Vendor &&
+			i.Product == d.Product
 }
 
-func (i DeviceIdentity) IsAccessoryMode() bool {
-	return i.Vendor == 0x18D1 && N(i.Product).in(0x2D00, 0x2D01)
+func (i deviceIdentity) isAccessoryMode() bool {
+	return i.Vendor == 0x18D1 && id(i.Product).in(0x2D00, 0x2D01)
 }
 
-type DeviceHistory int
+type deviceHistory int
 
 const (
 	historyNoAction = iota
@@ -54,23 +55,23 @@ const (
 	historyOpenFailed
 )
 
-type DeviceMap map[DeviceIdentity]DeviceHistory
+type deviceMap map[deviceIdentity]deviceHistory
 
-func mapDevices() DeviceMap {
+func mapDevices() deviceMap {
 	ctx := gousb.NewContext()
-	defer ctx.Close()
+	defer func() { _ = ctx.Close() }()
 
-	m := make(DeviceMap)
-	ctx.OpenDevices(func(d *gousb.DeviceDesc) bool {
-		m[ReadDeviceIdentity(d)] = historyNoAction
+	m := make(deviceMap)
+	_, _ = ctx.OpenDevices(func(d *gousb.DeviceDesc) bool {
+		m[readDeviceIdentity(d)] = historyNoAction
 		return false
 	})
 
 	return m
 }
 
-func propagateDeviceHistory(i DeviceIdentity, h DeviceHistory) DeviceHistory {
-	if i.IsAccessoryMode() {
+func propagateDeviceHistory(i deviceIdentity, h deviceHistory) deviceHistory {
+	if i.isAccessoryMode() {
 		if h == historyOpenFailed {
 			return historyOpenFailed
 		} else {
@@ -86,9 +87,9 @@ func propagateDeviceHistory(i DeviceIdentity, h DeviceHistory) DeviceHistory {
 	}
 }
 
-func updateDeviceMap(new DeviceMap, old DeviceMap) (DeviceMap, DeviceIdentity, DeviceIdentity) {
-	var identityOfAccessoryMode, identityToSwitch DeviceIdentity
-	m := make(DeviceMap)
+func updateDeviceMap(new deviceMap, old deviceMap) (deviceMap, deviceIdentity, deviceIdentity) {
+	var identityOfAccessoryMode, identityToSwitch deviceIdentity
+	m := make(deviceMap)
 
 	for identity, blank := range new {
 		history, ok := old[identity]
@@ -100,9 +101,9 @@ func updateDeviceMap(new DeviceMap, old DeviceMap) (DeviceMap, DeviceIdentity, D
 
 		m[identity] = history
 
-		if identity.IsAccessoryMode() && history == historyNoAction {
+		if identity.isAccessoryMode() && history == historyNoAction {
 			identityOfAccessoryMode = identity
-		} else if !identity.IsAccessoryMode() && history == historyNoAction {
+		} else if !identity.isAccessoryMode() && history == historyNoAction {
 			identityToSwitch = identity
 		}
 	}
@@ -111,7 +112,7 @@ func updateDeviceMap(new DeviceMap, old DeviceMap) (DeviceMap, DeviceIdentity, D
 
 func findConfig(d *gousb.DeviceDesc) (*gousb.ConfigDesc, error) {
 	if len(d.Configs) <= 0 {
-		return nil, fmt.Errorf("No config descriptor found")
+		return nil, fmt.Errorf("no config descriptor found")
 	}
 
 	var found = false
@@ -129,13 +130,13 @@ func findConfig(d *gousb.DeviceDesc) (*gousb.ConfigDesc, error) {
 
 func findInterface(c *gousb.ConfigDesc) (*gousb.InterfaceSetting, error) {
 	if len(c.Interfaces) <= 0 {
-		return nil, fmt.Errorf("No interface descriptor found")
+		return nil, fmt.Errorf("no interface descriptor found")
 	}
 
 	infDesc := &(c.Interfaces[0])
 
 	if len(infDesc.AltSettings) <= 0 {
-		return nil, fmt.Errorf("No interface alternate setting found")
+		return nil, fmt.Errorf("no interface alternate setting found")
 	}
 
 	return &(infDesc.AltSettings[0]), nil
@@ -156,19 +157,19 @@ func findEndpoints(s *gousb.InterfaceSetting) (*gousb.EndpointDesc, *gousb.Endpo
 
 	switch {
 	case !inFound && !outFound:
-		return nil, nil, fmt.Errorf("No endpoint found")
+		return nil, nil, fmt.Errorf("no endpoint found")
 	case !inFound:
-		return nil, nil, fmt.Errorf("No IN-endpoint found")
+		return nil, nil, fmt.Errorf("no IN-endpoint found")
 	case !outFound:
-		return nil, nil, fmt.Errorf("No OUT-endpoint found")
+		return nil, nil, fmt.Errorf("no OUT-endpoint found")
 	default:
 		return &in, &out, nil
 	}
 }
 
-type Errors []error
+type errors []error
 
-func (es Errors) Error() string {
+func (es errors) Error() string {
 	var ss []string
 	for _, e := range es {
 		ss = append(ss, e.Error())
@@ -176,7 +177,7 @@ func (es Errors) Error() string {
 	return strings.Join(ss, "\n")
 }
 
-type AccessoryModeStack struct {
+type accessoryModeStack struct {
 	Context     *gousb.Context
 	Device      *gousb.Device
 	Config      *gousb.Config
@@ -186,9 +187,9 @@ type AccessoryModeStack struct {
 	ReadStream  *gousb.ReadStream
 }
 
-func (s *AccessoryModeStack) Close() error {
+func (s *accessoryModeStack) close() error {
 	var e error
-	var errs Errors
+	var errs errors
 
 	if s.ReadStream != nil {
 		e = s.ReadStream.Close()
@@ -228,13 +229,13 @@ func (s *AccessoryModeStack) Close() error {
 	return nil
 }
 
-func openStack(i DeviceIdentity) (*AccessoryModeStack, error) {
+func openStack(i deviceIdentity) (*accessoryModeStack, error) {
 	var err error
-	var stack AccessoryModeStack
+	var stack accessoryModeStack
 	defer func() {
 		if err != nil {
 			log.Printf("Cannot open stack: %v, %v", i, err)
-			stack.Close()
+			_ = stack.close()
 		}
 	}()
 
@@ -242,7 +243,7 @@ func openStack(i DeviceIdentity) (*AccessoryModeStack, error) {
 
 	var devDesc *gousb.DeviceDesc
 	ds, err := stack.Context.OpenDevices(func(d *gousb.DeviceDesc) bool {
-		if i.Match(d) {
+		if i.match(d) {
 			devDesc = d // remember for later inspection
 			return true
 		}
@@ -251,24 +252,24 @@ func openStack(i DeviceIdentity) (*AccessoryModeStack, error) {
 
 	if err != nil {
 		for _, d := range ds {
-			d.Close()
+			_ = d.Close()
 		}
 		return nil, err
 	}
 
 	if len(ds) < 1 {
 		for _, d := range ds {
-			d.Close()
+			_ = d.Close()
 		}
-		err = fmt.Errorf("No device found: %v", i)
+		err = fmt.Errorf("no device found: %v", i)
 		return nil, err
 	}
 
 	if len(ds) > 1 {
 		for _, d := range ds {
-			d.Close()
+			_ = d.Close()
 		}
-		err = fmt.Errorf("More than one device found: %v", i)
+		err = fmt.Errorf("more than one device found: %v", i)
 		return nil, err
 	}
 
@@ -334,12 +335,12 @@ func controlRequestOut(d *gousb.Device, request uint8, val, idx uint16, data []b
 }
 
 const (
-	AoaManufacturer    = "Softcom"
-	AoaModel           = "Moonshot"
-	AoaDescription     = "4-4-2 Fingerprint Scanner"
-	AoaProtocolVersion = "1"
-	AoaUri             = "https://softcom.ng"
-	AoaSerialNumber    = "0123456789"
+	aoaManufacturer    = "Softcom"
+	aoaModel           = "Moonshot"
+	aoaDescription     = "4-4-2 Fingerprint Scanner"
+	aoaProtocolVersion = "1"
+	aoaUri             = "https://softcom.ng"
+	aoaSerialNumber    = "0123456789"
 )
 
 func switchToAccessoryMode(d *gousb.Device) (err error) {
@@ -353,52 +354,53 @@ func switchToAccessoryMode(d *gousb.Device) (err error) {
 	}()
 
 	version := controlRequestIn(d, 51, 0, 0, []byte{0x00, 0x00})
-	if !N(version).in(1, 2) {
-		panic(fmt.Errorf("Invalid AOA version number: %v", version))
+	if !id(version).in(1, 2) {
+		panic(fmt.Errorf("invalid AOA version number: %v", version))
 	}
 
-	controlRequestOut(d, 52, 0, 0, []byte(AoaManufacturer+"\x00"))
-	controlRequestOut(d, 52, 0, 1, []byte(AoaModel+"\x00"))
-	controlRequestOut(d, 52, 0, 2, []byte(AoaDescription+"\x00"))
-	controlRequestOut(d, 52, 0, 3, []byte(AoaProtocolVersion+"\x00"))
-	controlRequestOut(d, 52, 0, 4, []byte(AoaUri+"\x00"))
-	controlRequestOut(d, 52, 0, 5, []byte(AoaSerialNumber+"\x00"))
+	controlRequestOut(d, 52, 0, 0, []byte(aoaManufacturer+"\x00"))
+	controlRequestOut(d, 52, 0, 1, []byte(aoaModel+"\x00"))
+	controlRequestOut(d, 52, 0, 2, []byte(aoaDescription+"\x00"))
+	controlRequestOut(d, 52, 0, 3, []byte(aoaProtocolVersion+"\x00"))
+	controlRequestOut(d, 52, 0, 4, []byte(aoaUri+"\x00"))
+	controlRequestOut(d, 52, 0, 5, []byte(aoaSerialNumber+"\x00"))
 	controlRequestOut(d, 53, 0, 0, nil)
 	return nil
 }
 
-func requestSwitch(i DeviceIdentity) error {
+func requestSwitch(i deviceIdentity) error {
 	ctx := gousb.NewContext()
-	defer ctx.Close()
+	defer func() { _ = ctx.Close() }()
 
-	ds, err := ctx.OpenDevices(i.Match)
+	ds, err := ctx.OpenDevices(i.match)
 	for _, d := range ds {
-		defer d.Close()
+		//noinspection GoDeferInLoop
+		defer func() { _ = d.Close() }()
 	}
 	if err != nil {
 		return err
 	}
 
 	if len(ds) < 1 {
-		return fmt.Errorf("No device found: %v", i)
+		return fmt.Errorf("no device found: %v", i)
 	}
 
 	if len(ds) > 1 {
-		return fmt.Errorf("More than one device found: %v", i)
+		return fmt.Errorf("more than one device found: %v", i)
 	}
 
 	return switchToAccessoryMode(ds[0])
 }
 
-var currentDeviceMap = make(DeviceMap)
+var currentDeviceMap = make(deviceMap)
 
-func OpenAccessoryModeStack() *AccessoryModeStack {
+func openAccessoryModeStack() *accessoryModeStack {
 	for {
 		m, identityOfAccessoryMode, identityToSwitch :=
-			updateDeviceMap(mapDevices(), currentDeviceMap)
+				updateDeviceMap(mapDevices(), currentDeviceMap)
 		currentDeviceMap = m
 
-		if !identityOfAccessoryMode.Nil() {
+		if !identityOfAccessoryMode.nil() {
 			stack, err := openStack(identityOfAccessoryMode)
 			if err == nil {
 				log.Printf("Accessory mode opened: %v", identityOfAccessoryMode)
@@ -408,7 +410,7 @@ func OpenAccessoryModeStack() *AccessoryModeStack {
 			currentDeviceMap[identityOfAccessoryMode] = historyOpenFailed
 		}
 
-		if !identityToSwitch.Nil() {
+		if !identityToSwitch.nil() {
 			log.Printf("Requesting switch: %v", identityToSwitch)
 			err := requestSwitch(identityToSwitch)
 			if err != nil {

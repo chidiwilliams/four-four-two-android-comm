@@ -8,18 +8,18 @@ import (
 	"os"
 )
 
-type FinalImageCmd struct {
+type finalImageCmd struct {
 	locations []string
 	scores    []string
 }
 
-type FinalImageResult struct {
+type finalImageResult struct {
 	images []string
 	scores []string
 }
 
-func HandleFinalImage(in <-chan FinalImageCmd, out chan<- FinalImageResult, notify chan<- int, id int) {
-	defer RecoverDo(
+func handleFinalImage(in <-chan finalImageCmd, out chan<- finalImageResult, notify chan<- int, id int) {
+	defer recoverDo(
 		func(x interface{}) {
 			notify <- id
 			log.Printf("Final image handler terminates due to: %s", x)
@@ -48,7 +48,7 @@ func HandleFinalImage(in <-chan FinalImageCmd, out chan<- FinalImageResult, noti
 			}
 
 			log.Printf("Sending %d images and %d scores", len(images), len(cmd.scores))
-			out <- FinalImageResult{images: images, scores: cmd.scores}
+			out <- finalImageResult{images: images, scores: cmd.scores}
 		}
 	}
 }
