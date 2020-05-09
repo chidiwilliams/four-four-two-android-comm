@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 )
 
 var (
@@ -52,6 +53,7 @@ func Interact(stack *AccessoryModeStack) {
 	const (
 		usbWriterId = 1 << iota
 		captureId
+		finalImageHandlerId
 	)
 
 	usbOut, sentIn := make(chan interface{}, 9), make(chan bool)
@@ -61,6 +63,10 @@ func Interact(stack *AccessoryModeStack) {
 	captureControlOut, captureResultsIn := make(chan CaptureCmd, 9), make(chan string)
 	go Capture(captureControlOut, captureResultsIn, notifyIn, captureId)
 	defer close(captureControlOut)
+
+	finalImageControlOut, finalImageResultsIn := make(chan FinalImageCmd, 9), make(chan FinalImageResult)
+	go HandleFinalImage(finalImageControlOut, finalImageResultsIn, notifyIn, finalImageHandlerId)
+	defer close(finalImageControlOut)
 
 	usbWriterPending := 0
 
@@ -96,9 +102,24 @@ func Interact(stack *AccessoryModeStack) {
 			log.Printf("Capture result: %s", sliceStrSafe(captureResult, 50))
 			if len(captureResult) > 6 && captureResult[:6] == "image " {
 				usbOut <- NewOutCmd(outCmdTypePreview, data{"image": captureResult[6:]})
-			} else if captureResult == "Process Complete" {
-				usbOut <- NewOutCmd("error", data{"error": "Successful"})
+			} else if len(captureResult) > 17 && captureResult[:17] == "Processed images:" {
+				locations, scores := make([]string, 0), make([]string, 0)
+
+				w := strings.Split(captureResult, " ")
+				log.Printf("w: %+v\n", w)
+				for _, l := range w[2:] {
+					m := strings.Split(l, ",")
+					locations = append(locations, m[0])
+					scores = append(scores, m[1])
+				}
+
+				cmd := FinalImageCmd{locations: locations, scores: scores}
+				log.Printf("Sending final image command: %+v", cmd)
+				finalImageControlOut <- cmd
 			}
+
+		case finalImageResult := <-finalImageResultsIn:
+			usbOut <- NewOutCmd("fingerprint", data{"images": finalImageResult.images, "scores": finalImageResult.scores})
 		}
 	}
 }
